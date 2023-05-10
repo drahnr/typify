@@ -2,6 +2,7 @@
 
 use std::collections::HashSet;
 
+use crate::enums::get_object;
 use crate::type_entry::{
     EnumTagType, TypeEntry, TypeEntryDetails, TypeEntryEnum, TypeEntryNewtype, TypeEntryStruct,
     Variant, VariantDetails,
@@ -25,7 +26,16 @@ impl TypeSpace {
     ) -> Result<(TypeEntry, &'a Option<Box<Metadata>>)> {
         match schema {
             Schema::Object(obj) => {
-                if let Some(type_entry) = self.cache.lookup(obj) {
+                let mut obj_wo_meta = obj.clone();
+                obj_wo_meta.metadata = None;
+                obj_wo_meta.extensions.clear();
+                if let Some(ref mut object) = obj_wo_meta.object {
+                    object.properties.iter_mut().for_each(|(name, schema)| match schema {
+                       Schema::Object(obj) => {  },
+                       _ => {} 
+                    });
+                }
+                if let Some(type_entry) = self.cache.lookup(&obj_wo_meta) {
                     Ok((type_entry, &obj.metadata))
                 } else {
                     self.convert_schema_object(type_name, obj)
